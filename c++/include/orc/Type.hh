@@ -91,6 +91,8 @@ namespace orc {
      */
     virtual Type* addUnionChild(ORC_UNIQUE_PTR<Type> fieldType) = 0;
 
+    virtual std::vector<std::string> getfieldNames() { return {};}
+
     /**
      * Build a Type object from string text representation.
      */
