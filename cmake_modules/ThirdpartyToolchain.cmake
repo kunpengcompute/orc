@@ -14,8 +14,9 @@ set(LZ4_VERSION "1.9.3")
 set(SNAPPY_VERSION "1.1.7")
 set(ZLIB_VERSION "1.2.11")
 set(GTEST_VERSION "1.8.0")
-set(PROTOBUF_VERSION "3.5.1")
+set(PROTOBUF_VERSION "3.13.0")
 set(ZSTD_VERSION "1.5.2")
+set(ZLIB_NG_VERSION "2.2.1")
 
 option(ORC_PREFER_STATIC_PROTOBUF "Prefer static protobuf library, if available" ON)
 option(ORC_PREFER_STATIC_SNAPPY   "Prefer static snappy library, if available"   ON)
@@ -23,6 +24,7 @@ option(ORC_PREFER_STATIC_LZ4      "Prefer static lz4 library, if available"     
 option(ORC_PREFER_STATIC_ZSTD     "Prefer static zstd library, if available"     ON)
 option(ORC_PREFER_STATIC_ZLIB     "Prefer static zlib library, if available"     ON)
 option(ORC_PREFER_STATIC_GMOCK    "Prefer static gmock library, if available"    ON)
+option(ORC_PREFER_STATIC_ZLIB_NG   "Prefer static zlib-ng library, if available"    ON)
 
 # zstd requires us to add the threads
 FIND_PACKAGE(Threads REQUIRED)
@@ -45,6 +47,10 @@ endif ()
 
 if (DEFINED ENV{ZLIB_HOME})
   set (ZLIB_HOME "$ENV{ZLIB_HOME}")
+endif ()
+
+if (DEFINED ENV{ZLIB_NG_HOME})
+  set (ZLIB_NG_HOME "$ENV{ZLIB_NG_HOME}")
 endif ()
 
 if (DEFINED ENV{LZ4_HOME})
@@ -155,6 +161,61 @@ if (ZLIB_VENDORED)
   add_dependencies (orc_zlib zlib_ep)
   if (INSTALL_VENDORED_LIBS)
     install(FILES "${ZLIB_STATIC_LIB}"
+            DESTINATION "lib")
+  endif ()
+endif ()
+
+
+# ----------------------------------------------------------------------
+# ZLIB_NG
+
+if (NOT "${ZLIB_NG_HOME}" STREQUAL "")
+  find_package (ZLIBNG REQUIRED)
+  set(ZLIB_NG_VENDORED FALSE)
+else ()
+  set(ZLIB_NG_PREFIX "${THIRDPARTY_DIR}/zlib_ng_ep-install")
+  set(ZLIB_NG_INCLUDE_DIR "${ZLIB_NG_PREFIX}/include")
+  if (MSVC)
+    set(ZLIB_NG_STATIC_LIB_NAME zlibngstatic)
+    if (${UPPERCASE_BUILD_TYPE} STREQUAL "DEBUG")
+      set(ZLIB_NG_STATIC_LIB_NAME ${ZLIB_NG_STATIC_LIB_NAME}d)
+    endif ()
+  else ()
+    set(ZLIB_NG_STATIC_LIB_NAME z-ng)
+  endif ()
+  set(ZLIB_NG_STATIC_LIB "${ZLIB_NG_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${ZLIB_NG_STATIC_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(ZLIB_NG_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${ZLIB_NG_PREFIX}
+          -DBUILD_SHARED_LIBS=OFF)
+
+  if (BUILD_POSITION_INDEPENDENT_LIB)
+    set(ZLIB_NG_CMAKE_ARGS ${ZLIB_NG_CMAKE_ARGS} -DCMAKE_POSITION_INDEPENDENT_CODE=ON)
+  endif ()
+
+  ExternalProject_Add (zlib_ng_ep
+          URL "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_NG_VERSION}.tar.gz"
+          CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=cc CFLAGS=-fPIC ${CMAKE_CURRENT_BINARY_DIR}/zlib_ng_ep-prefix/src/zlib_ng_ep/configure --prefix=${ZLIB_NG_PREFIX}
+          BUILD_COMMAND make
+          INSTALL_COMMAND make install
+          ${THIRDPARTY_LOG_OPTIONS}
+          BUILD_BYPRODUCTS "${ZLIB_NG_STATIC_LIB}")
+
+  set(ZLIB_NG_LIBRARY ${ZLIB_NG_STATIC_LIB})
+  set(ZLIB_NG_VENDORED TRUE)
+endif ()
+
+add_library (orc_zlib_ng INTERFACE)
+add_library (orc::zlib_ng ALIAS orc_zlib_ng)
+if (ORC_PREFER_STATIC_ZLIB_NG AND ${ZLIB_NG_STATIC_LIB})
+  target_link_libraries (orc_zlib_ng INTERFACE ${ZLIB_NG_LIBRARY})
+else ()
+  target_link_libraries (orc_zlib_ng INTERFACE ${ZLIB_NG_STATIC_LIB})
+endif ()
+target_include_directories (orc_zlib_ng SYSTEM INTERFACE ${ZLIB_NG_INCLUDE_DIR})
+
+if (ZLIB_NG_VENDORED)
+  add_dependencies (orc_zlib_ng zlib_ng_ep)
+  if (INSTALL_VENDORED_LIBS)
+    install(FILES "${ZLIB_NG_STATIC_LIB}"
             DESTINATION "lib")
   endif ()
 endif ()

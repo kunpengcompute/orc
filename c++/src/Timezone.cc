@@ -833,41 +833,39 @@ namespace orc {
     }
     version = versionParser.getVersion();
     variants.resize(variantCount);
-    transitions.resize(timeCount);
-    currentVariant.resize(timeCount);
-    parseTimeVariants(ptr, variantOffset, variantCount, nameOffset,
-                      nameCount);
+    parseTimeVariants(ptr, variantOffset, variantCount, nameOffset, nameCount);
     bool foundAncient = false;
-    for(uint64_t t=0; t < timeCount; ++t) {
-      transitions[t] =
-        versionParser.parseTime(ptr + timeOffset +
-                                t * versionParser.getTimeSize());
-      currentVariant[t] = ptr[timeVariantOffset + t];
-      if (currentVariant[t] >= variantCount) {
+    for (uint64_t t = 0; t < timeCount; ++t) {
+      int64_t transition = versionParser.parseTime(ptr + timeOffset + t * versionParser.getTimeSize());
+      uint64_t variantIndex = ptr[timeVariantOffset + t];
+      if (variantIndex >= variantCount) {
         std::stringstream buffer;
-        buffer << "tzfile rule out of range " << filename
-               << " references rule " << currentVariant[t]
-               << " of " << variantCount;
+        buffer << "tzfile rule out of range " << filename << " references rule "
+	               << variantIndex << " of " << variantCount;
         throw TimezoneError(buffer.str());
       }
+      if (variants[variantIndex].name == "LMT") {
+          continue;
+      }
+      transitions.push_back(transition);
+      currentVariant.push_back(variantIndex);
       // find the oldest standard time and use that as the ancient value
-      if (!foundAncient &&
-          !variants[currentVariant[t]].isDst) {
+      if (!foundAncient && !variants[variantIndex].isDst) {
         foundAncient = true;
-        ancientVariant = currentVariant[t];
+        ancientVariant = variantIndex;
       }
     }
     if (!foundAncient) {
       ancientVariant = 0;
     }
-    futureRule = parseFutureRule(versionParser.parseFutureString
-                                   (ptr, sectionLength,
-                                    fileLength - sectionLength));
+
+    futureRule = parseFutureRule(
+        versionParser.parseFutureString(ptr, sectionLength, fileLength - sectionLength));
 
     // find the lower bound for applying the future rule
     if (futureRule->isDefined()) {
-      if (timeCount > 0) {
-        lastTransition = transitions[timeCount - 1];
+      if (!transitions.empty()) {
+        lastTransition = transitions[transitions.size() - 1];
       } else {
         lastTransition = INT64_MIN;
       }

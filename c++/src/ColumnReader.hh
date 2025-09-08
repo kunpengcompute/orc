@@ -97,7 +97,7 @@ namespace orc {
    * The interface for reading ORC data types.
    */
   class ColumnReader {
-  protected:
+  public:
     std::unique_ptr<ByteRleDecoder> notNullDecoder;
     uint64_t columnId;
     MemoryPool& memoryPool;
@@ -125,6 +125,9 @@ namespace orc {
     virtual void next(ColumnVectorBatch& rowBatch,
                       uint64_t numValues,
                       char* notNull);
+
+    virtual void next(void*& omnivec, uint64_t numValues, char* notNull,
+                const orc::Type& baseTp, int* omniTypeId) { printf("should not in base next!!!");}
 
     /**
      * Read the next group of values without decoding

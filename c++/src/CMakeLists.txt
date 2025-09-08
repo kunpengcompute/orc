@@ -244,7 +244,55 @@ target_link_libraries (orc
   orc::snappy
   orc::lz4
   orc::zstd
+  orc::zlib_ng
   ${LIBHDFSPP_LIBRARIES}
   )
+
+install(FILES
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/Reader.hh"
+  	DESTINATION "include/orc/RowReader"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/ByteRLE.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/ColumnReader.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/RLE.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/Compression.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/Timezone.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/TypeImpl.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/RLEV2Util.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/StripeStream.hh"
+        DESTINATION "include/orc"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/io/InputStream.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/io/OutputStream.hh"
+        DESTINATION "include/orc/io"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/wrap/orc-proto-wrapper.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/wrap/zero-copy-stream-wrapper.h"
+        DESTINATION "include/orc/wrap"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/sargs/SargsApplier.hh"
+        DESTINATION "include/orc/sargs"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/../../../c++/src/RLEv2.hh"
+        DESTINATION "include/orc"
+  )
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/Adaptor.hh"
+	"${CMAKE_CURRENT_BINARY_DIR}/orc_proto.pb.h"
+        DESTINATION "include/orc"
+  )
+
+
 
 install(TARGETS orc DESTINATION lib)

@@ -33,6 +33,16 @@ namespace orc {
 
   static const uint64_t DIRECTORY_SIZE_GUESS = 16 * 1024;
 
+  std::unique_ptr<proto::PostScript> readPostscript(InputStream *stream,
+                                                    DataBuffer<char> *buffer,
+                                                    uint64_t postscriptSize);
+
+  std::unique_ptr<proto::Footer> readFooter(InputStream* stream,
+                                            const DataBuffer<char> *buffer,
+                                            uint64_t footerOffset,
+                                            const proto::PostScript& ps,
+                                            MemoryPool& memoryPool);
+
   /**
   * WriterVersion Implementation
   */
@@ -112,7 +122,7 @@ namespace orc {
 
 
   class RowReaderImpl : public RowReader {
-  private:
+  protected:
     const Timezone& localTimezone;
 
     // contents
@@ -142,7 +152,7 @@ namespace orc {
 
     bool enableEncodedBlock;
     // internal methods
-    void startNextStripe();
+    virtual void startNextStripe();
 
     // row index of current stripe with column id as the key
     std::unordered_map<uint64_t, proto::RowIndex> rowIndexes;
@@ -220,7 +230,7 @@ namespace orc {
   };
 
   class ReaderImpl : public Reader {
-   private:
+   protected:
     // FileContents
     std::shared_ptr<FileContents> contents;
 
@@ -256,6 +266,10 @@ namespace orc {
                const ReaderOptions& options,
                uint64_t fileLength,
                uint64_t postscriptLength);
+
+    std::vector<std::string> getAllFiedsName() override {
+        return contents->schema->getfieldNames();
+    }
 
     const ReaderOptions& getReaderOptions() const;
 

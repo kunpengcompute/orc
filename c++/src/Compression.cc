@@ -27,7 +27,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "zlib.h"
+#include "zlib-ng.h"
 #include "zstd.h"
 
 #include "wrap/snappy-wrapper.h"
@@ -232,7 +232,7 @@ namespace orc {
   private:
     void init();
     void end();
-    z_stream strm;
+    zng_stream strm;
   };
 
   ZlibCompressionStream::ZlibCompressionStream(
@@ -250,7 +250,7 @@ namespace orc {
   }
 
   uint64_t ZlibCompressionStream::doStreamingCompression() {
-    if (deflateReset(&strm) != Z_OK) {
+    if (zng_deflateReset(&strm) != Z_OK) {
       throw std::runtime_error("Failed to reset inflate.");
     }
 
@@ -272,7 +272,7 @@ namespace orc {
       strm.avail_out = static_cast<unsigned int>
       (outputSize - outputPosition);
 
-      int ret = deflate(&strm, Z_FINISH);
+      int ret = zng_deflate(&strm, Z_FINISH);
       outputPosition = outputSize - static_cast<int>(strm.avail_out);
 
       if (ret == Z_STREAM_END) {
@@ -303,14 +303,14 @@ DIAGNOSTIC_PUSH
     strm.opaque = nullptr;
     strm.next_in = nullptr;
 
-    if (deflateInit2(&strm, level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY)
+    if (zng_deflateInit2(&strm, level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY)
         != Z_OK) {
       throw std::runtime_error("Error while calling deflateInit2() for zlib.");
     }
   }
 
   void ZlibCompressionStream::end() {
-    (void)deflateEnd(&strm);
+    (void)zng_deflateEnd(&strm);
   }
 
 DIAGNOSTIC_PUSH
@@ -621,7 +621,7 @@ DIAGNOSTIC_PUSH
                                 int* size,
                                 size_t availableSize) override;
   private:
-    z_stream zstream;
+    zng_stream zstream;
   };
 
 DIAGNOSTIC_PUSH
@@ -643,7 +643,7 @@ DIAGNOSTIC_PUSH
     zstream.opaque = nullptr;
     zstream.next_out = reinterpret_cast<Bytef*>(outputDataBuffer.data());
     zstream.avail_out = static_cast<uInt>(outputDataBuffer.capacity());
-    int64_t result = inflateInit2(&zstream, -15);
+    int64_t result = zng_inflateInit2(&zstream, -15);
     switch (result) {
     case Z_OK:
       break;
@@ -661,7 +661,7 @@ DIAGNOSTIC_PUSH
 DIAGNOSTIC_POP
 
   ZlibDecompressionStream::~ZlibDecompressionStream() {
-    int64_t result = inflateEnd(&zstream);
+    int64_t result = zng_inflateEnd(&zstream);
     if (result != Z_OK) {
       // really can't throw in destructors
       std::cout << "Error in ~ZlibDecompressionStream() " << result << "\n";
@@ -677,13 +677,13 @@ DIAGNOSTIC_POP
     zstream.next_out =
       reinterpret_cast<Bytef*>(const_cast<char*>(outputBuffer));
     zstream.avail_out = static_cast<uInt>(outputDataBuffer.capacity());
-    if (inflateReset(&zstream) != Z_OK) {
+    if (zng_inflateReset(&zstream) != Z_OK) {
       throw std::logic_error("Bad inflateReset in "
                               "ZlibDecompressionStream::NextDecompress");
     }
     int64_t result;
     do {
-      result = inflate(&zstream, availableSize == remainingLength ? Z_FINISH :
+      result = zng_inflate(&zstream, availableSize == remainingLength ? Z_FINISH :
                         Z_SYNC_FLUSH);
       switch (result) {
       case Z_OK:
