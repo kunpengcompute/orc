@@ -59,6 +59,10 @@ namespace orc {
     TypeImpl(TypeKind kind, uint64_t precision,
              uint64_t scale);
 
+    std::vector<std::string> getfieldNames() override {
+        return fieldNames;
+    }
+
     uint64_t getColumnId() const override;
 
     uint64_t getMaximumColumnId() const override;
